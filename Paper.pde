@@ -1,15 +1,12 @@
 
-
 class Paper {  
   List<PVector> vertices;
-  List<Face> faces;
-  List<LineSegment> edges;
+  Map<Integer, Set<Face>> layers;
   
   Paper(Paper other) {
     try {
       vertices = deepCopy(other.vertices);
-      faces = deepClone(other.faces);
-      edges = deepClone(other.edges);
+      layers = (HashMap<Integer, Set<Face>>) deepClone(other.layers);
     }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }
@@ -17,8 +14,7 @@ class Paper {
   
   Paper(float size) {
       vertices = new ArrayList<PVector>();
-      faces = new ArrayList<Face>();
-      edges = new ArrayList<LineSegment>();
+      layers = new HashMap<Integer, Set<Face>>();
       createSquare(size);
   }
   
@@ -27,46 +23,46 @@ class Paper {
     vertices.add(new PVector( size/2, -size/2));
     vertices.add(new PVector( size/2, size/2));
     vertices.add(new PVector(-size/2, size/2));
-    faces.add(new Face(vertices.get(0), vertices.get(1), vertices.get(2)));
-    faces.add(new Face(vertices.get(0), vertices.get(2), vertices.get(3)));
-    createEdges();
+    layers.put(0, new HashSet<Face>(Arrays.asList(
+        new Face(vertices.get(0), vertices.get(1), vertices.get(2)),
+        new Face(vertices.get(0), vertices.get(2), vertices.get(3)))));
   }
-  
-  void createEdges() {
-    for (int i = 0; i < vertices.size(); ++i) {      
-      edges.add(new LineSegment(vertices.get(i), vertices.get((i+1) % vertices.size())));
-    }
-  }
-  
-  void display() {
-    for (Face face : faces) {
-      face.display();  
-    }
-    //noFill();
-    //strokeWeight(2);
-    //stroke(0);
 
-    //for (LineSegment edge : edges) {
-    //  edge.display();  
-    //}
-  }
-  
-  boolean contains(PVector p) {
-    for(Face face : faces) {      
-      if (face.contains(p)) {
-        return true;            
+  void display() {
+    List<Integer> layerKeys = new ArrayList<Integer>(layers.keySet());
+    Collections.sort(layerKeys);
+    
+    for (int layer : layerKeys) {
+      for (Face face : layers.get(layer)) {
+        face.display();  
       }
     }
-    return false;
   }
+
+  void fold(Line crease) {
+    HashMap<Integer, Set<Face>> newLayers = new HashMap<Integer, Set<Face>>();
     
-  void fold(Line crease, PVector vertex) {
-    List<Face> newFaces = new ArrayList<Face>();
-  
-    for (Face face : faces) {
-      newFaces.addAll(face.subdivide(crease));  
+    int newLayerCount = layers.size() * 2;
+    for (int layer : this.layers.keySet()) {
+      for (Face face : this.layers.get(layer)) {
+        Set<Face> subdivisions = face.subdivide(crease);
+        
+        for (Face newFace : subdivisions) {
+          if (crease.liesToRight(newFace.getMid())) {
+            newFace.flip(crease);
+            addFace(newFace, newLayerCount - layer - 1, newLayers);
+          }else {
+            addFace(newFace, layer, newLayers);            
+          }
+        }
+      }
     }
-    this.faces = newFaces;
+    this.layers = newLayers;
+  }
+  
+  void addFace(Face face, int layer, Map<Integer, Set<Face>> layerMap) {
+    layerMap.putIfAbsent(layer, new HashSet<Face>());
+    layerMap.get(layer).add(face);    
   }
   
   @Override

@@ -1,14 +1,19 @@
+import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.Collections;
 
 Paper paper;
+Paper foldedPaper;
 
 void setup() {
-  size(1200, 800);  
-  paper = new Paper(400);  
+  //size(1200, 800);  
+  size(1200, 800, P2D);
+  smooth(8);
+  paper = new Paper(600);  
 }
 
 float hoverRad = 20;
@@ -20,7 +25,6 @@ void draw() {
   if (mousePressed && null != draggedVertex) {
     PVector currentPos = dragOffset.copy().add(mouseX, mouseY);
     displayCrease(draggedVertex, currentPos);
-    ellipse(currentPos.x, currentPos.y, 10, 10);
   }else {
     paper.display();
     encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
@@ -28,29 +32,17 @@ void draw() {
 }
 
 void displayCrease(PVector vertex, PVector newPos) {
-  PVector lineMid = vertex.copy().add(newPos).mult(0.5);
-  PVector lineDir = vertex.copy().sub(newPos).normalize().cross(new PVector(0, 0, 1));
+  if (vertex.dist(newPos) < 10) {
+    paper.display();
+    return;
+  }
+  PVector lineMid = newPos.copy().add(vertex).mult(0.5);
+  PVector lineDir = newPos.copy().sub(vertex).normalize().cross(new PVector(0, 0, 1));
   
   Line crease = new Line(lineMid, lineDir);
-  Paper foldedPaper = paper.clone();
-  foldedPaper.fold(crease, vertex);
+  foldedPaper = paper.clone();
+  foldedPaper.fold(crease);
   foldedPaper.display();
-  
-  List<PVector> foldPoints = new ArrayList<PVector>();
-  for (LineSegment edge : paper.edges) {
-    PVector intersection = edge.intersect(crease);
-     
-    if (null != intersection) {
-      foldPoints.add(intersection);
-    }
-  }
-  if (foldPoints.size() == 2 ) {
-    stroke(0, 0, 255);
-    line(foldPoints.get(0).x, 
-      foldPoints.get(0).y,
-      foldPoints.get(1).x, 
-      foldPoints.get(1).y);
-  }
 }
 
 PVector dragOffset;
@@ -67,6 +59,10 @@ void mousePressed() {
 }
 
 void mouseReleased() {
+  if (null == draggedVertex) {
+    return;
+  }
+  paper = foldedPaper;
   draggedVertex = null;
 }
 
@@ -92,10 +88,30 @@ void encircle(PVector p, float radius, color c) {
   ellipse(p.x, p.y, 2*radius, 2*radius);
 }
 
-static <T> ArrayList<T> deepClone(List<T> list) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
+static Object deepClone(Object obj) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
+  if (obj instanceof List) {
+    return deepCloneList((List) obj);
+  } else if (obj instanceof Map) {
+    return deepCloneMap((Map) obj);
+  } else if (obj instanceof Cloneable) {
+    return obj.getClass().getMethod("clone").invoke(obj); 
+  }
+  return obj;
+}
+
+static <K, V> HashMap<K, V> deepCloneMap(Map<K, V> map) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
+  HashMap<K, V> mapCopy = new HashMap<K, V>();
+  
+  for (HashMap.Entry<K, V> entry : map.entrySet()) {
+    mapCopy.put((K) deepClone(entry.getKey()), (V) deepClone(entry.getValue()));
+  }
+  return mapCopy;
+}
+
+static <T> ArrayList<T> deepCloneList(List<T> list) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
   ArrayList<T> listCopy = new ArrayList<T>();
   for (T obj : list) {
-    T objCopy = (T) obj.getClass().getMethod("clone").invoke(obj);
+    T objCopy = (T) deepClone(obj);
     listCopy.add(objCopy);
   }
   return listCopy;

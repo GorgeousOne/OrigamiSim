@@ -15,32 +15,42 @@ class Face {
 
   Face(PVector p0, PVector p1, PVector p2, boolean isFlipped) {
     this.isFlipped = isFlipped;
-    this.p0 = p0.copy();
-    this.p1 = p1.copy();
-    this.p2 = p2.copy();
     
     if (turnsToRight(p2.copy().sub(p0), p1.copy().sub(p0))) {
+      this.p0 = p0.copy();
+      this.p1 = p1.copy();
+      this.p2 = p2.copy();      
+    }else {
+      this.p0 = p0.copy();
+      this.p1 = p2.copy();
+      this.p2 = p1.copy();
+
+    }
+    createEdges();
+    //println(Math.signum(p2.copy().sub(p0).cross(p1.copy().sub(p0)).z));
+  }
+  
+  private void createEdges() {
       edge0 = new LineSegment(p0, p1);
       edge1 = new LineSegment(p1, p2);
       edge2 = new LineSegment(p2, p0);
-    } else {
-      edge0 = new LineSegment(p0, p2);
-      edge1 = new LineSegment(p2, p1);
-      edge2 = new LineSegment(p1, p0);
-    }
   }
   
   PVector getMid() {
     return p0.copy().add(p1).add(p2).mult(1/3f);  
   }
   
-  final color front = color(232, 245, 255);
-  final color back = color(255, 240, 240);
+  //final color front = color(232, 245, 255);
+  //final color back = color(255, 240, 240);
+  final int alpha = 255;
+  final color front = color(66, 135, 245, alpha);
+  final color back = color(235, 64, 52, alpha);
   
   void display() {
+    //stroke(0);
+    //strokeWeight(1);
+    noStroke();
     fill(isFlipped ? back : front);
-    strokeWeight(2);
-    stroke(0);
     
     beginShape();
     vertex(this.p0.x, this.p0.y);
@@ -72,17 +82,17 @@ class Face {
     if (null == inters0 &&
         null == inters1 &&
         null == inters2) {
-      divisions.add(this);  
+      divisions.add(this.clone());  
       return divisions;
     }
     if (null != inters0 && null != inters1) {
-      divisions.add(new Face(inters0, p1, inters1));
+      divisions.add(new Face(inters0, p1, inters1, isFlipped));
       divisions.addAll(triangulateQuad(inters0, inters1, p2, p0));
     } else if (null != inters1 && null != inters2) {
-      divisions.add(new Face(inters1, p2, inters2));
+      divisions.add(new Face(inters1, p2, inters2, isFlipped));
       divisions.addAll(triangulateQuad(inters1, inters2, p0, p1));      
     } else {
-      divisions.add(new Face(inters2, p0, inters0));
+      divisions.add(new Face(inters2, p0, inters0, isFlipped));
       divisions.addAll(triangulateQuad(inters2, inters0, p1, p2));      
     }
     return divisions;
@@ -94,18 +104,26 @@ class Face {
     
     if (dist1 < dist2) {
       return new HashSet<>(Arrays.asList(
-          new Face(p0, p1, p2),
-          new Face(p0, p2, p3)));
+          new Face(p0, p1, p2, isFlipped),
+          new Face(p0, p2, p3, isFlipped)));
     } else {
       return new HashSet<>(Arrays.asList(
-          new Face(p1, p2, p3),
-          new Face(p1, p3, p0)));
+          new Face(p1, p2, p3, isFlipped),
+          new Face(p1, p3, p0, isFlipped)));
     }
+  }
+  
+  void flip(Line crease) {
+    isFlipped = !isFlipped;
+    p0 = crease.mirror(p0);
+    p1 = crease.mirror(p1);
+    p2 = crease.mirror(p2);
+    createEdges();
   }
   
   @Override
   public Face clone() {
-    return new Face(p0, p1, p2);
+    return new Face(p0, p1, p2, isFlipped);
   }
   
   @Override

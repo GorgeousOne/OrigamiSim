@@ -9,19 +9,31 @@ import java.util.Collections;
 Paper paper;
 Paper foldedPaper;
 
+PImage img;
+
+PShader edges;  
+
 void setup() {
   //size(1200, 800);  
   size(1200, 800, P2D);
   smooth(8);
-  paper = new Paper(600);  
+  textureMode(NORMAL);
+
+  img = loadImage("flow.jpg");
+  //edges = loadShader("edges.glsl");
+
+  Texture back = new Graphic(img);
+  Texture front = new SolidFill(color(234, 225, 214));
+  paper = new Paper(600, front, back);  
 }
 
 float hoverRad = 20;
 
 void draw() {
+  
   background(255);
   translate(width/2f, height/2f);
-  
+  //shader(edges);
   if (mousePressed && null != draggedVertex) {
     PVector currentPos = dragOffset.copy().add(mouseX, mouseY);
     displayCrease(draggedVertex, currentPos);
@@ -69,11 +81,11 @@ void mouseReleased() {
 PVector getHoveredVertex(Paper paper, float radius) {
   PVector cursor = new PVector(mouseX - width/2f, mouseY - height/2f);
 
-  for (PVector vertex : paper.vertices) {
-    float dist = cursor.dist(vertex);
+  for (Vertex vertex : paper.vertices) {
+    float dist = cursor.dist(vertex.pos);
     
     if (dist <= radius) {
-      return vertex;
+      return vertex.getPos();
     }
   }
   return null;

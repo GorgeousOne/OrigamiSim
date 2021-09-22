@@ -52,21 +52,56 @@ class Line {
   }
 }
 
-class LineSegment {
+class Vertex implements Cloneable{
+  PVector pos;
+  PVector uv;
   
-  PVector start;
-  PVector end;
+  Vertex(float x, float y, float uvx, float uvy) {
+    this.pos = new PVector(x, y);
+    this.uv = new PVector(uvx, uvy);
+  }
   
-  LineSegment(PVector start, PVector end) {
-    this.start = start.copy();
-    this.end = end.copy();
+  Vertex(Vertex other) {
+    this.pos = other.pos.copy();
+    this.uv = other.uv.copy();
+  }
+  
+  PVector getPos() {
+    return pos.copy();
+  }
+
+  PVector getUV() {
+    return uv.copy();
+  }
+  
+  @Override
+  public Vertex clone() {
+    return new Vertex(this);
+  }
+}
+class Edge {
+  
+  Vertex start;
+  Vertex end;
+  
+  Edge(Vertex start, Vertex end) {
+    this.start = start.clone();
+    this.end = end.clone();
   }
   
   PVector getDir() {
-    return end.copy().sub(start);  
+    return end.getPos().sub(start.pos);  
   }
   
-  PVector intersect(Line line) {
+  PVector getUvDir() {
+    return end.getUV().sub(start.uv); 
+  }
+  
+  float length() {
+    return start.pos.dist(end.pos);  
+  }
+  
+  Vertex intersect(Line line) {
     PVector normal = line.getDir().cross(new PVector(0, 0, 1));
     float dirsDotProduct = getDir().dot(normal);
     
@@ -74,21 +109,23 @@ class LineSegment {
     if (dirsDotProduct == 0) {
       return null;
     }
-    float delta = line.getOrigin().sub(start).dot(normal) / dirsDotProduct;
-    return delta < 0 || delta > 1 ? null :  point(delta);
-    //return point(delta);
+    float delta = line.getOrigin().sub(start.pos).dot(normal) / dirsDotProduct;
+    return delta < 0 || delta > 1 ? null : point(delta);
   }
   
-  PVector point(float t) {
-    return start.copy().add(end.copy().sub(start).mult(t));
+  Vertex point(float t) {
+    Vertex v = start.clone();
+    v.pos.add(getDir().mult(t));
+    v.uv.add(getUvDir().mult(t));
+    return v;
   }
   
   void display() {
-    line(start.x, start.y, end.x, end.y);
+    line(start.pos.x, start.pos.y, end.pos.x, end.pos.y);
   }
     
   @Override
-  public LineSegment clone() {
-    return new LineSegment(start, end);
+  public Edge clone() {
+    return new Edge(start.clone(), end.clone());
   }
 }

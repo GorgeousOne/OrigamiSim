@@ -1,31 +1,37 @@
 
 class Paper {  
-  List<PVector> vertices;
+  List<Vertex> vertices;
   Map<Integer, Set<Face>> layers;
+  Texture front;
+  Texture back;
   
   Paper(Paper other) {
+    this.front = other.front;
+    this.back = other.back;
     try {
-      vertices = deepCopy(other.vertices);
+      vertices = (List<Vertex>) deepClone(other.vertices);
       layers = (HashMap<Integer, Set<Face>>) deepClone(other.layers);
     }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }
   }
   
-  Paper(float size) {
-      vertices = new ArrayList<PVector>();
+  Paper(float size, Texture front, Texture back) {
+      vertices = new ArrayList<Vertex>();
       layers = new HashMap<Integer, Set<Face>>();
+      this.front = front;
+      this.back = back;
       createSquare(size);
   }
   
   void createSquare(float size) {
-    vertices.add(new PVector(-size/2, -size/2));
-    vertices.add(new PVector( size/2, -size/2));
-    vertices.add(new PVector( size/2, size/2));
-    vertices.add(new PVector(-size/2, size/2));
+    vertices.add(new Vertex(-size/2, -size/2, 0, 0));
+    vertices.add(new Vertex( size/2, -size/2, 1, 0));
+    vertices.add(new Vertex( size/2, size/2, 1, 1));
+    vertices.add(new Vertex(-size/2, size/2, 0, 1));
     layers.put(0, new HashSet<Face>(Arrays.asList(
-        new Face(vertices.get(0), vertices.get(1), vertices.get(2)),
-        new Face(vertices.get(0), vertices.get(2), vertices.get(3)))));
+        new Face(vertices.get(0), vertices.get(1), vertices.get(2), front, back),
+        new Face(vertices.get(0), vertices.get(2), vertices.get(3), front, back))));
   }
 
   void display() {
@@ -58,6 +64,12 @@ class Paper {
       }
     }
     this.layers = newLayers;
+
+    for (Vertex vertex : vertices) {
+      if (crease.liesToRight(vertex.pos)) {
+        vertex.pos.set(crease.mirror(vertex.pos));
+      }
+    }
   }
   
   void addFace(Face face, int layer, Map<Integer, Set<Face>> layerMap) {

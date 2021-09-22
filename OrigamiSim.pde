@@ -10,42 +10,44 @@ Paper paper;
 Paper foldedPaper;
 
 PImage img;
-
-PShader edges;  
+PShader edges;
+PGraphics canvas;
 
 void setup() {
-  //size(1200, 800);  
   size(1200, 800, P2D);
   smooth(8);
   textureMode(NORMAL);
 
   img = loadImage("flow.jpg");
-  //edges = loadShader("edges.glsl");
-
   Texture back = new Graphic(img);
   Texture front = new SolidFill(color(234, 225, 214));
-  paper = new Paper(600, front, back);  
+  paper = new Paper(600, front, back);
+  canvas = createGraphics(width, height, P2D);
 }
 
 float hoverRad = 20;
 
 void draw() {
-  
   background(255);
-  translate(width/2f, height/2f);
-  //shader(edges);
+  
+  canvas.beginDraw();
+  canvas.clear();
+  canvas.translate(width/2f, height/2f);
+
   if (mousePressed && null != draggedVertex) {
     PVector currentPos = dragOffset.copy().add(mouseX, mouseY);
-    displayCrease(draggedVertex, currentPos);
+    displayCrease(draggedVertex, currentPos, canvas);
   }else {
-    paper.display();
+    paper.display(canvas);
     encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
   }
+  canvas.endDraw();
+  image(canvas, 0, 0);
 }
 
-void displayCrease(PVector vertex, PVector newPos) {
+void displayCrease(PVector vertex, PVector newPos, PGraphics g) {
   if (vertex.dist(newPos) < 10) {
-    paper.display();
+    paper.display(g);
     return;
   }
   PVector lineMid = newPos.copy().add(vertex).mult(0.5);
@@ -54,7 +56,7 @@ void displayCrease(PVector vertex, PVector newPos) {
   Line crease = new Line(lineMid, lineDir);
   foldedPaper = paper.clone();
   foldedPaper.fold(crease);
-  foldedPaper.display();
+  foldedPaper.display(g);
 }
 
 PVector dragOffset;

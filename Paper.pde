@@ -30,17 +30,17 @@ class Paper {
     vertices.add(new Vertex( size/2, size/2, 1, 1));
     vertices.add(new Vertex(-size/2, size/2, 0, 1));
     layers.put(0, new HashSet<Face>(Arrays.asList(
-        new Face(vertices.get(0), vertices.get(1), vertices.get(2), front, back),
-        new Face(vertices.get(0), vertices.get(2), vertices.get(3), front, back))));
+        new Face(vertices.get(0), vertices.get(1), vertices.get(2)),
+        new Face(vertices.get(0), vertices.get(2), vertices.get(3)))));
   }
 
-  void display() {
+  void display(PGraphics g) {
     List<Integer> layerKeys = new ArrayList<Integer>(layers.keySet());
     Collections.sort(layerKeys);
     
     for (int layer : layerKeys) {
       for (Face face : layers.get(layer)) {
-        face.display();  
+        face.display(g, front, back);  
       }
     }
   }

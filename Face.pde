@@ -8,16 +8,12 @@ class Face {
   Edge edge0;
   Edge edge1;
   Edge edge2;
-  Texture front;
-  Texture back;
-  
-  Face(Vertex v0, Vertex v1, Vertex v2, Texture front, Texture back) {
-    this(v0, v1, v2, front, back, false);
+
+  Face(Vertex v0, Vertex v1, Vertex v2) {
+    this(v0, v1, v2, false);
   }
 
-  Face(Vertex v0, Vertex v1, Vertex v2, Texture front, Texture back, boolean isFlipped) {
-    this.front = front;
-    this.back = back;
+  Face(Vertex v0, Vertex v1, Vertex v2, boolean isFlipped) {
     this.isFlipped = isFlipped;
     
     if (turnsToRight(v2.getPos().sub(v1.pos), v1.getPos().sub(v1.pos))) {
@@ -37,27 +33,27 @@ class Face {
   PVector getMid() {
     return v0.getPos().add(v1.pos).add(v2.pos).mult(1/3f);  
   }
-    
-  void display() {
-    noStroke();
-    beginShape();
+
+  void display(PGraphics g) {
+    g.beginShape();
+    g.vertex(v0.pos.x, v0.pos.y, v0.uv.x, v0.uv.y);
+    g.vertex(v1.pos.x, v1.pos.y, v1.uv.x, v1.uv.y);
+    g.vertex(v2.pos.x, v2.pos.y, v2.uv.x, v2.uv.y);
+    g.endShape(CLOSE);    
+  }
+
+  void display(PGraphics g, Texture front, Texture back) {
+    g.beginShape();
 
     if (isFlipped) {
       back.apply();  
     }else {
       front.apply();
-    }
-    
-    vertex(v0.pos.x, v0.pos.y, v0.uv.x, v0.uv.y);
-    vertex(v1.pos.x, v1.pos.y, v1.uv.x, v1.uv.y);
-    vertex(v2.pos.x, v2.pos.y, v2.uv.x, v2.uv.y);
-    endShape(CLOSE);
-    
-    stroke(0);
-    strokeWeight(1);
-    //edge0.display();
-    //edge1.display();
-    //edge2.display();
+    }    
+    g.vertex(v0.pos.x, v0.pos.y, v0.uv.x, v0.uv.y);
+    g.vertex(v1.pos.x, v1.pos.y, v1.uv.x, v1.uv.y);
+    g.vertex(v2.pos.x, v2.pos.y, v2.uv.x, v2.uv.y);
+    g.endShape(CLOSE);    
   }
 
   //boolean contains(PVector point) {
@@ -69,9 +65,9 @@ class Face {
   //  return !(hasNegativeCoordinate && hasPositiveCoordinate);
   //}
   
-  float signFunc(PVector p, PVector v0, PVector v1) {
-      return (p.x - v1.x) * (v0.y - v1.y) - (v0.x - v1.x) * (p.y - v1.y);  
-  }
+  //float signFunc(PVector p, PVector v0, PVector v1) {
+  //    return (p.x - v1.x) * (v0.y - v1.y) - (v0.x - v1.x) * (p.y - v1.y);  
+  //}
   
   Set<Face> subdivide(Line crease) {    
     Set<Face> divisions = new HashSet<Face>();
@@ -87,21 +83,16 @@ class Face {
       return divisions;
     }
     if (null != inters0 && null != inters1) {
-      divisions.add(new Face(inters0, v1, inters1, front, back, isFlipped));
+      divisions.add(new Face(inters0, v1, inters1, isFlipped));
       divisions.addAll(triangulateQuad(inters0, inters1, v2, v0));
     } else if (null != inters1 && null != inters2) {
-      divisions.add(new Face(inters1, v2, inters2, front, back, isFlipped));
+      divisions.add(new Face(inters1, v2, inters2, isFlipped));
       divisions.addAll(triangulateQuad(inters1, inters2, v0, v1));      
     } else {
-      divisions.add(new Face(inters2, v0, inters0, front, back, isFlipped));
+      divisions.add(new Face(inters2, v0, inters0, isFlipped));
       divisions.addAll(triangulateQuad(inters2, inters0, v1, v2));      
     }
     return divisions;
-  }
-  
-  PVector interpolateTexCoord(PVector intersection, Edge edge, PVector uvStart, PVector uvEnd) {
-    float percent = intersection.dist(edge.start.pos) / edge.length();
-    return uvStart.copy().mult(percent).add(uvEnd.copy().mult(1 - percent));
   }
   
   Set<Face>triangulateQuad(Vertex p0, Vertex p1, Vertex p2, Vertex p3) {
@@ -110,12 +101,12 @@ class Face {
     
     if (disuv1 < disuv2) {
       return new HashSet<>(Arrays.asList(
-          new Face(p0, p1, p2, front, back, isFlipped),
-          new Face(p0, p2, p3, front, back, isFlipped)));
+          new Face(p0, p1, p2, isFlipped),
+          new Face(p0, p2, p3, isFlipped)));
     } else {
       return new HashSet<>(Arrays.asList(
-          new Face(p1, p2, p3, front, back, isFlipped),
-          new Face(p1, p3, p0, front, back, isFlipped)));
+          new Face(p1, p2, p3, isFlipped),
+          new Face(p1, p3, p0, isFlipped)));
     }
   }
   
@@ -131,7 +122,7 @@ class Face {
   
   @Override
   public Face clone() {
-    return new Face(v0, v1, v2, front, back, isFlipped);
+    return new Face(v0, v1, v2, isFlipped);
   }
   
   @Override

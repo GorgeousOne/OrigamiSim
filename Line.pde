@@ -120,9 +120,9 @@ class Edge {
     return v;
   }
   
-  void display() {
-    line(start.pos.x, start.pos.y, end.pos.x, end.pos.y);
-  }
+  //void display() {
+  //  line(start.pos.x, start.pos.y, end.pos.x, end.pos.y);
+  //}
     
   @Override
   public Edge clone() {

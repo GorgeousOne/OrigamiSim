@@ -10,55 +10,73 @@ Paper paper;
 Paper foldedPaper;
 
 PImage img;
+PShader edges;
+PGraphics canvas;
 
-PShader edges;  
+PShader blur;
+PShader shadow;
 
 void setup() {
-  //size(1200, 800);  
   size(1200, 800, P2D);
   smooth(8);
-  textureMode(NORMAL);
 
   img = loadImage("flow.jpg");
-  //edges = loadShader("edges.glsl");
-
   Texture back = new Graphic(img);
   Texture front = new SolidFill(color(234, 225, 214));
-  paper = new Paper(600, front, back);  
+  paper = new Paper(700, front, back, color(55, 82, 145));
+  canvas = createGraphics(width, height, P2D);
+  
+  blur = loadShader("blur.glsl");
+  blur.set("blurSize", 9);
+  blur.set("sigma", 5.0f);
+  
+  shadow = loadShader("shadow.glsl");
 }
 
 float hoverRad = 20;
 
 void draw() {
-  
   background(255);
-  translate(width/2f, height/2f);
-  //shader(edges);
-  if (mousePressed && null != draggedVertex) {
-    PVector currentPos = dragOffset.copy().add(mouseX, mouseY);
-    displayCrease(draggedVertex, currentPos);
-  }else {
-    paper.display();
-    encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
-  }
-}
-
-void displayCrease(PVector vertex, PVector newPos) {
-  if (vertex.dist(newPos) < 10) {
-    paper.display();
-    return;
-  }
-  PVector lineMid = newPos.copy().add(vertex).mult(0.5);
-  PVector lineDir = newPos.copy().sub(vertex).normalize().cross(new PVector(0, 0, 1));
   
-  Line crease = new Line(lineMid, lineDir);
-  foldedPaper = paper.clone();
-  foldedPaper.fold(crease);
-  foldedPaper.display();
+  canvas.beginDraw();
+  canvas.clear();
+  canvas.textureMode(NORMAL);
+  canvas.translate(width/2f, height/2f);
+  
+  canvas.strokeWeight(10);
+  canvas.strokeJoin(ROUND);
+  
+  if (mousePressed && null != draggedVertex) {
+    foldedPaper.display(canvas);
+  }else {
+    paper.display(canvas);
+  }
+  canvas.endDraw();
+  image(canvas, 0, 0);
+  
+  translate(width/2f, height/2f);
+  encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
 }
 
 PVector dragOffset;
 PVector draggedVertex;
+
+void mouseDragged() {
+  if (draggedVertex == null) {
+    return;  
+  }
+  PVector newPos = dragOffset.copy().add(mouseX, mouseY);
+  if (draggedVertex.dist(newPos) < 10) {
+    paper.display(g);
+    return;
+  }
+  PVector lineMid = newPos.copy().add(draggedVertex).mult(0.5);
+  PVector lineDir = newPos.copy().sub(draggedVertex).normalize().cross(new PVector(0, 0, 1));
+  
+  Line crease = new Line(lineMid, lineDir);
+  foldedPaper = paper.clone();
+  foldedPaper.fold(crease); 
+}
 
 void mousePressed() {
   PVector vertex = getHoveredVertex(paper, hoverRad);
@@ -68,6 +86,7 @@ void mousePressed() {
   }
   dragOffset = vertex.copy().sub(mouseX, mouseY);
   draggedVertex = vertex;  
+  foldedPaper = paper.clone();
 }
 
 void mouseReleased() {

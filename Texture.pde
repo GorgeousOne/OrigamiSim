@@ -1,7 +1,7 @@
 
 //a texture to apply during polygon rendering
 interface Texture {
-  void apply();
+  void apply(PGraphics g);
 }
 
 class SolidFill implements Texture {     
@@ -11,8 +11,8 @@ class SolidFill implements Texture {
     this.solidFill = solidFill;  
   }
   
-  void apply() {
-    fill(solidFill);  
+  void apply(PGraphics g) {
+    g.fill(solidFill);  
   }
 }
 
@@ -23,7 +23,7 @@ class Graphic implements Texture {
     this.tex = tex;  
   }
   
-  void apply() {
-    texture(tex);
+  void apply(PGraphics g) {
+    g.texture(tex);
   }
 }

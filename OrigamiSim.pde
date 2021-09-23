@@ -23,7 +23,7 @@ void setup() {
   img = loadImage("flow.jpg");
   Texture back = new Graphic(img);
   Texture front = new SolidFill(color(234, 225, 214));
-  paper = new Paper(700, front, back);
+  paper = new Paper(700, front, back, color(55, 82, 145));
   canvas = createGraphics(width, height, P2D);
   
   blur = loadShader("blur.glsl");
@@ -42,7 +42,10 @@ void draw() {
   canvas.clear();
   canvas.textureMode(NORMAL);
   canvas.translate(width/2f, height/2f);
-
+  
+  canvas.strokeWeight(10);
+  canvas.strokeJoin(ROUND);
+  
   if (mousePressed && null != draggedVertex) {
     foldedPaper.display(canvas);
   }else {
@@ -54,7 +57,6 @@ void draw() {
   translate(width/2f, height/2f);
   encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
 }
-
 
 PVector dragOffset;
 PVector draggedVertex;

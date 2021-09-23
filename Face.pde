@@ -34,39 +34,20 @@ class Face {
     return v0.getPos().add(v1.pos).add(v2.pos).mult(1/3f);  
   }
 
-  void displayShadow(PGraphics g) {
-    displayShadowEdge(edge0, g);
-    displayShadowEdge(edge1, g);
-    displayShadowEdge(edge2, g);
-  }
-  
-  void displayShadowEdge(Edge edge, PGraphics g) {
-    PVector origin = edge.start.getPos();
-    PVector dir = edge.getDir();    
-    PVector normal = dir.cross(new PVector(0, 0, 1)).normalize();
-    float shadowRange = 10;
-  
-    //gives edge information to shader, screen space has inverted y
-    shadow.set("origin", origin.x + width/2f, height/2f - origin.y);
-    shadow.set("dir", dir.x, -dir.y);
-    shadow.set("normal", normal.x, -normal.y);
-    shadow.set("radius", shadowRange);
-    shadow.set("color", 0, 0, 0, 0.5);
-    g.shader(shadow);
-    g.strokeWeight(3*shadowRange);
-    g.stroke(0);
-    g.line(origin.x, origin.y, edge.end.pos.x, edge.end.pos.y);
-    g.resetShader();
+  void display(PGraphics g) {
+    display(g, null, null);
   }
 
   void display(PGraphics g, Texture front, Texture back) {
     g.beginShape();
     
-    if (isFlipped) {
-      back.apply(g);  
-    }else {
-      front.apply(g);
-    }    
+    if (null != front) {
+      if (isFlipped) {
+        back.apply(g);  
+      }else {
+        front.apply(g);
+      }   
+    }
     g.vertex(v0.pos.x, v0.pos.y, v0.uv.x, v0.uv.y);
     g.vertex(v1.pos.x, v1.pos.y, v1.uv.x, v1.uv.y);
     g.vertex(v2.pos.x, v2.pos.y, v2.uv.x, v2.uv.y);

@@ -4,10 +4,13 @@ class Paper {
   Map<Integer, Set<Face>> layers;
   Texture front;
   Texture back;
+  color border;
   
   Paper(Paper other) {
     this.front = other.front;
     this.back = other.back;
+    this.border = other.border;
+    
     try {
       vertices = (List<Vertex>) deepClone(other.vertices);
       layers = (HashMap<Integer, Set<Face>>) deepClone(other.layers);
@@ -16,11 +19,12 @@ class Paper {
     }
   }
   
-  Paper(float size, Texture front, Texture back) {
+  Paper(float size, Texture front, Texture back, color border) {
       vertices = new ArrayList<Vertex>();
       layers = new HashMap<Integer, Set<Face>>();
       this.front = front;
       this.back = back;
+      this.border = border;
       createSquare(size);
   }
   
@@ -37,13 +41,12 @@ class Paper {
   void display(PGraphics g) {
     List<Integer> layerKeys = new ArrayList<Integer>(layers.keySet());
     Collections.sort(layerKeys);
-    g.strokeCap(ROUND);
-    g.strokeJoin(ROUND);
     g.noFill();
     
     for (int layer : layerKeys) {
+      g.stroke(border);
       for (Face face : layers.get(layer)) {
-        face.displayShadow(g);  
+        face.display(g);  
       }
       g.noStroke();
       for (Face face : layers.get(layer)) {

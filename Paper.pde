@@ -27,8 +27,8 @@ class Paper {
   void createSquare(float size) {
     vertices.add(new Vertex(-size/2, -size/2, 0, 0));
     vertices.add(new Vertex( size/2, -size/2, 1, 0));
-    vertices.add(new Vertex( size/2, size/2, 1, 1));
-    vertices.add(new Vertex(-size/2, size/2, 0, 1));
+    vertices.add(new Vertex( size/2,  size/2, 1, 1));
+    vertices.add(new Vertex(-size/2,  size/2, 0, 1));
     layers.put(0, new HashSet<Face>(Arrays.asList(
         new Face(vertices.get(0), vertices.get(1), vertices.get(2)),
         new Face(vertices.get(0), vertices.get(2), vertices.get(3)))));
@@ -37,8 +37,15 @@ class Paper {
   void display(PGraphics g) {
     List<Integer> layerKeys = new ArrayList<Integer>(layers.keySet());
     Collections.sort(layerKeys);
+    g.strokeCap(ROUND);
+    g.strokeJoin(ROUND);
+    g.noFill();
     
     for (int layer : layerKeys) {
+      for (Face face : layers.get(layer)) {
+        face.displayShadow(g);  
+      }
+      g.noStroke();
       for (Face face : layers.get(layer)) {
         face.display(g, front, back);  
       }

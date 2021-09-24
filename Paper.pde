@@ -1,10 +1,12 @@
 
 class Paper {  
   List<Vertex> vertices;
-  Map<Integer, Set<Face>> layers;
+  LinkedList<Set<Face>> layers;
+  
   Texture front;
   Texture back;
   color border;
+  boolean isFlipped;
   
   Paper(Paper other) {
     this.front = other.front;
@@ -13,15 +15,15 @@ class Paper {
     
     try {
       vertices = (List<Vertex>) deepClone(other.vertices);
-      layers = (HashMap<Integer, Set<Face>>) deepClone(other.layers);
+      layers = (LinkedList<Set<Face>>) deepClone(other.layers);
     }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }
   }
   
   Paper(float size, Texture front, Texture back, color border) {
-      vertices = new ArrayList<Vertex>();
-      layers = new HashMap<Integer, Set<Face>>();
+      this.vertices = new ArrayList<Vertex>();
+      this.layers = new LinkedList<Set<Face>>();
       this.front = front;
       this.back = back;
       this.border = border;
@@ -33,48 +35,61 @@ class Paper {
     vertices.add(new Vertex( size/2, -size/2, 1, 0));
     vertices.add(new Vertex( size/2,  size/2, 1, 1));
     vertices.add(new Vertex(-size/2,  size/2, 0, 1));
-    layers.put(0, new HashSet<Face>(Arrays.asList(
+    layers.add(new HashSet<Face>(Arrays.asList(
         new Face(vertices.get(0), vertices.get(1), vertices.get(2)),
         new Face(vertices.get(0), vertices.get(2), vertices.get(3)))));
   }
-
+  
+  void flip() {
+     
+  }
+  
   void display(PGraphics g) {
-    List<Integer> layerKeys = new ArrayList<Integer>(layers.keySet());
-    Collections.sort(layerKeys);
+
     g.noFill();
     
-    for (int layer : layerKeys) {
+    for (Set<Face> layer : layers) {
       g.stroke(border);
-      for (Face face : layers.get(layer)) {
+      for (Face face : layer) {
         face.display(g);  
       }
       g.noStroke();
-      for (Face face : layers.get(layer)) {
+      for (Face face : layer) {
         face.display(g, front, back);  
       }
     }
   }
 
   void fold(Line crease) {
-    HashMap<Integer, Set<Face>> newLayers = new HashMap<Integer, Set<Face>>();
+    LinkedList<Set<Face>> newLayers = new LinkedList<Set<Face>>();
+    Iterator<Set<Face>> it = layers.descendingIterator();
     
-    int newLayerCount = layers.size() * 2;
-    for (int layer : this.layers.keySet()) {
-      for (Face face : this.layers.get(layer)) {
+    while(it.hasNext()) {
+      Set<Face> layer = it.next();
+      Set<Face> newBotLayer = new HashSet<Face>();
+      Set<Face> newTopLayer = new HashSet<Face>();
+      
+      for (Face face : layer) {
         Set<Face> subdivisions = face.subdivide(crease);
         
         for (Face newFace : subdivisions) {
           if (crease.liesToRight(newFace.getMid())) {
             newFace.flip(crease);
-            addFace(newFace, newLayerCount - layer - 1, newLayers);
+            newTopLayer.add(newFace);
           }else {
-            addFace(newFace, layer, newLayers);            
+            newBotLayer.add(newFace);
           }
         }
       }
+      if (!newBotLayer.isEmpty()) {
+        newLayers.addFirst(newBotLayer);  
+      }
+      if (!newTopLayer.isEmpty()) {
+        newLayers.addLast(newTopLayer);
+      }
     }
     this.layers = newLayers;
-
+    
     for (Vertex vertex : vertices) {
       if (crease.liesToRight(vertex.pos)) {
         vertex.pos.set(crease.mirror(vertex.pos));

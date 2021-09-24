@@ -2,6 +2,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedList;
+import java.util.Iterator;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,7 +25,7 @@ void setup() {
   img = loadImage("flow.jpg");
   Texture back = new Graphic(img);
   Texture front = new SolidFill(color(234, 225, 214));
-  paper = new Paper(700, front, back, color(55, 82, 145));
+  paper = new Paper(600, front, back, color(55, 82, 145));
   canvas = createGraphics(width, height, P2D);
   
   blur = loadShader("blur.glsl");
@@ -46,7 +48,12 @@ void draw() {
   canvas.strokeWeight(10);
   canvas.strokeJoin(ROUND);
   
-  if (mousePressed && null != draggedVertex) {
+  if (null != draggedVertex) {
+    boolean didMove = transitionDragMovement();
+    
+    if (didMove) {
+      foldNewPaper();
+    }
     foldedPaper.display(canvas);
   }else {
     paper.display(canvas);
@@ -58,18 +65,21 @@ void draw() {
   encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
 }
 
-PVector dragOffset;
-PVector draggedVertex;
+float transitionSpeed = 1/4f;
 
-void mouseDragged() {
-  if (draggedVertex == null) {
-    return;  
+boolean transitionDragMovement() {
+  PVector mousePos = new PVector(mouseX, mouseY);
+  
+  if (dragTarget.dist(mousePos) < 0.1) {
+    return false;
   }
-  PVector newPos = dragOffset.copy().add(mouseX, mouseY);
-  if (draggedVertex.dist(newPos) < 10) {
-    paper.display(g);
-    return;
-  }
+  //println(mousePos.sub(dragTarget).mag());
+  dragTarget.add(mousePos.sub(dragTarget).mult(transitionSpeed));
+  return true;
+}
+
+void foldNewPaper() {
+  PVector newPos = dragTarget.copy().add(dragOffset);
   PVector lineMid = newPos.copy().add(draggedVertex).mult(0.5);
   PVector lineDir = newPos.copy().sub(draggedVertex).normalize().cross(new PVector(0, 0, 1));
   
@@ -78,6 +88,16 @@ void mouseDragged() {
   foldedPaper.fold(crease); 
 }
 
+PVector dragOffset;
+PVector draggedVertex;
+PVector dragTarget;
+
+//void mouseDragged() {
+//  if (draggedVertex == null) {
+//    return;  
+//  }
+//}
+
 void mousePressed() {
   PVector vertex = getHoveredVertex(paper, hoverRad);
   
@@ -85,6 +105,7 @@ void mousePressed() {
     return;  
   }
   dragOffset = vertex.copy().sub(mouseX, mouseY);
+  dragTarget = new PVector(mouseX, mouseY);
   draggedVertex = vertex;  
   foldedPaper = paper.clone();
 }
@@ -124,6 +145,8 @@ static Object deepClone(Object obj) throws NoSuchMethodException, IllegalAccessE
     return deepCloneList((List) obj);
   } else if (obj instanceof Map) {
     return deepCloneMap((Map) obj);
+  } else if (obj instanceof Set) {
+    return deepCloneSet((Set) obj);
   } else if (obj instanceof Cloneable) {
     return obj.getClass().getMethod("clone").invoke(obj); 
   }
@@ -139,13 +162,22 @@ static <K, V> HashMap<K, V> deepCloneMap(Map<K, V> map) throws NoSuchMethodExcep
   return mapCopy;
 }
 
-static <T> ArrayList<T> deepCloneList(List<T> list) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
-  ArrayList<T> listCopy = new ArrayList<T>();
+static <T> LinkedList<T> deepCloneList(List<T> list) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
+  LinkedList<T> listCopy = new LinkedList<T>();
   for (T obj : list) {
     T objCopy = (T) deepClone(obj);
-    listCopy.add(objCopy);
+    listCopy.addLast(objCopy);
   }
   return listCopy;
+}
+
+static <T> HashSet<T> deepCloneSet(Set<T> set) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
+  HashSet<T> setCopy = new HashSet<T>();
+  for (T obj : set) {
+    T objCopy = (T) deepClone(obj);
+    setCopy.add(objCopy);
+  }
+  return setCopy;
 }
 
 static <T> ArrayList<T> deepCopy(List<T> list) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{

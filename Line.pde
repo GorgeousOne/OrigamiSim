@@ -45,7 +45,7 @@ class Line {
     PVector plumbBobPoint = intersect(new Line(p, normal));
     
     if (null == plumbBobPoint) {
-      return null;  
+      return p.copy();  
     }
     PVector dist = p.copy().sub(plumbBobPoint);
     return plumbBobPoint.sub(dist);

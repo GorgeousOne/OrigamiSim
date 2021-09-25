@@ -45,10 +45,10 @@ class Paper {
         new Face(firstLayer.get(0), firstLayer.get(1), firstLayer.get(2)),
         new Face(firstLayer.get(0), firstLayer.get(2), firstLayer.get(3)))));
     layerVerts.add(firstLayer);
-    dragNodes.addAll(firstLayer);
+    dragNodes.addAll(firstLayer);    
   }
   
-  void calvVertices() {
+  private void calcVertices() {
     dragNodes.clear();
     layerVerts.clear();
     
@@ -75,9 +75,7 @@ class Paper {
         face.flip(mid);  
       }
     }
-    for (Vertex vertex : dragNodes) {
-      vertex.pos.set(mid.mirror(vertex.pos));
-    }
+    calcVertices();
   }
   
   void display(PGraphics g) {
@@ -101,7 +99,7 @@ class Paper {
     for (Vertex v : vertices) {
       g.vertex(v.pos.x, v.pos.y);   
     }
-    g.endShape();
+    g.endShape(CLOSE);
   }
   
   void fold(Line crease) {
@@ -133,20 +131,8 @@ class Paper {
       }
     }
     this.layers = newLayers;
-    calvVertices();
+    calcVertices();
   }
-  
-  //private void foldVertices(Line crease) {
-  //  for (Vertex vertex : vertices) {
-  //    if (crease.liesToRight(vertex.pos)) {
-  //      vertex.pos.set(crease.mirror(vertex.pos));
-  //    }
-  //  }    
-  //}
-  //private void addFace(Face face, int layer, Map<Integer, Set<Face>> layerMap) {
-  //  layerMap.putIfAbsent(layer, new HashSet<Face>());
-  //  layerMap.get(layer).add(face);    
-  //}
   
   @Override
   public Paper clone() {

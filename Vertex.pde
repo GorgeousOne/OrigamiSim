@@ -1,3 +1,4 @@
+import java.util.Objects;
 
 class Vertex implements Cloneable{
   PVector pos;
@@ -35,16 +36,23 @@ class Vertex implements Cloneable{
       return false;
     }
     Vertex vertex = (Vertex) other;
-    return pos.dist(vertex.pos) < 0.001;
+    return pos.dist(vertex.pos) < 0.01;
   }
   
-  //@Override
-  //int hashCode() {
-  //  return pos.hashCode();
-  //}
+  //have no idea how hashing should work. I want unique hashes for floats 
+  @Override
+  int hashCode() {
+    final int h1 = Float.floatToIntBits(threshold(pos.x));
+    final int h2 = Float.floatToIntBits(threshold(pos.y));
+    return h1 ^ ((h2 >>> 16) | (h2 << 16));
+  }
   
   @Override
   public Vertex clone() {
     return new Vertex(this);
   }
+}
+
+float threshold(float f) {
+  return round(f * 1000) / 1000f;
 }

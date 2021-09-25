@@ -19,8 +19,6 @@ void setup() {
   size(1200, 800, P2D);
   smooth(8);
   img = loadImage("flow.jpg");
-  //Texture back = new SolidFill(color(255, 0, 0));
-  //Texture front = new SolidFill(color(0, 0, 255));
   Texture front = new SolidFill(color(234, 225, 214));
   Texture back = new Graphic(img);
 
@@ -113,7 +111,7 @@ void mouseReleased() {
   }
   if (foldedPaper.layers.size() <= 64) {
     paper = foldedPaper;
-    paper.calvVertices();
+    paper.calcVertices();
   }else {
     println("the paper is too thick to fold");  
   }

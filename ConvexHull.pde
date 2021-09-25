@@ -2,26 +2,20 @@ import java.util.Comparator;
 
 LinkedList<Vertex> convexHull(LinkedList<Vertex> vertices) {
   LinkedList<Vertex> hull = new LinkedList<Vertex>();
-  println("\nsort", vertices.size(), "verts");
   Collections.sort(vertices, new YxComparator());
-  println(vertices, "\n");
   
   Vertex start = vertices.getFirst();
   hull.addFirst(start);
   vertices.removeFirst();
-  println("1st", start.pos);
   Collections.sort(vertices, new AngleComparator(start));
   
   hull.addFirst(vertices.getFirst());
-  println("2nd", vertices.getFirst().pos);
   vertices.removeFirst();
   hull.addFirst(vertices.getFirst());
-  println("3rd", vertices.getFirst().pos);
   vertices.removeFirst();
   
   while (!vertices.isEmpty()) {
-    println(hull.size(), "next", vertices.getFirst().pos);
-    while (!turnsToRight(hull.get(1), hull.getFirst(), vertices.getFirst())) {
+    while (hull.size() > 1 && !turnsToRight(hull.get(1), hull.getFirst(), vertices.getFirst())) {
       hull.removeFirst();
     }
     hull.addFirst(vertices.getFirst());

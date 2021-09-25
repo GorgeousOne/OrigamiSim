@@ -45,11 +45,11 @@ void draw() {
   canvas.textureMode(NORMAL);
   canvas.translate(width/2f, height/2f);
   
-  canvas.strokeWeight(10);
+  canvas.strokeWeight(7);
   canvas.strokeJoin(ROUND);
   
   if (null != draggedVertex) {
-    boolean didMove = transitionDragMovement();
+    boolean didMove = transitionFoldMovement();
     
     if (didMove) {
       foldNewPaper();
@@ -67,13 +67,13 @@ void draw() {
 
 float transitionSpeed = 1/4f;
 
-boolean transitionDragMovement() {
+boolean transitionFoldMovement() {
   PVector mousePos = new PVector(mouseX, mouseY);
   
   if (dragTarget.dist(mousePos) < 0.1) {
+    dragTarget.set(mousePos);
     return false;
   }
-  //println(mousePos.sub(dragTarget).mag());
   dragTarget.add(mousePos.sub(dragTarget).mult(transitionSpeed));
   return true;
 }
@@ -88,15 +88,17 @@ void foldNewPaper() {
   foldedPaper.fold(crease); 
 }
 
+void keyPressed() {
+  switch(key) {
+    case 'f':
+      paper.flip();
+      break;
+  }
+}
+
 PVector dragOffset;
 PVector draggedVertex;
 PVector dragTarget;
-
-//void mouseDragged() {
-//  if (draggedVertex == null) {
-//    return;  
-//  }
-//}
 
 void mousePressed() {
   PVector vertex = getHoveredVertex(paper, hoverRad);
@@ -114,7 +116,11 @@ void mouseReleased() {
   if (null == draggedVertex) {
     return;
   }
-  paper = foldedPaper;
+  if (foldedPaper.layers.size() <= 64) {
+    paper = foldedPaper;  
+  }else {
+    println("the paper is too thick to fold");  
+  }
   draggedVertex = null;
 }
 

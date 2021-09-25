@@ -41,11 +41,20 @@ class Paper {
   }
   
   void flip() {
-     
+    Collections.reverse(layers);
+    Line mid = new Line(new PVector(0, 0), new PVector(0, 1));
+    
+    for (Set<Face> layer : layers) {
+      for (Face face : layer) {
+        face.flip(mid);  
+      }
+    }
+    for (Vertex vertex : vertices) {
+      vertex.pos.set(mid.mirror(vertex.pos));
+    }
   }
   
   void display(PGraphics g) {
-
     g.noFill();
     
     for (Set<Face> layer : layers) {

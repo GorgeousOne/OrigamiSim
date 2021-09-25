@@ -54,18 +54,18 @@ class Face {
     g.endShape(CLOSE);    
   }
 
-  //boolean contains(PVector point) {
-  //  float d1 = this.signFunc(point, this.p0, this.p1);
-  //  float d2 = this.signFunc(point, this.p1, this.p2);
-  //  float d3 = this.signFunc(point, this.p2, this.p0);
-  //  boolean hasNegativeCoordinate = d1 < epsilon || d2 < epsilon || d3 < epsilon;
-  //  boolean hasPositiveCoordinate = d1 > epsilon || d2 > epsilon || d3 > epsilon;
-  //  return !(hasNegativeCoordinate && hasPositiveCoordinate);
-  //}
+  boolean contains(PVector point) {
+    float d1 = this.signFunc(point, this.v0.pos, this.v1.pos);
+    float d2 = this.signFunc(point, this.v1.pos, this.v2.pos);
+    float d3 = this.signFunc(point, this.v2.pos, this.v0.pos);
+    boolean hasNegativeCoordinate = d1 < epsilon || d2 < epsilon || d3 < epsilon;
+    boolean hasPositiveCoordinate = d1 > epsilon || d2 > epsilon || d3 > epsilon;
+    return !(hasNegativeCoordinate && hasPositiveCoordinate);
+  }
   
-  //float signFunc(PVector p, PVector v0, PVector v1) {
-  //    return (p.x - v1.x) * (v0.y - v1.y) - (v0.x - v1.x) * (p.y - v1.y);  
-  //}
+  float signFunc(PVector p, PVector v0, PVector v1) {
+      return (p.x - v1.x) * (v0.y - v1.y) - (v0.x - v1.x) * (p.y - v1.y);  
+  }
   
   Set<Face> subdivide(Line crease) {    
     Set<Face> divisions = new HashSet<Face>();

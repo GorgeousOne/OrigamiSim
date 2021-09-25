@@ -15,24 +15,17 @@ PImage img;
 PShader edges;
 PGraphics canvas;
 
-PShader blur;
-PShader shadow;
-
 void setup() {
   size(1200, 800, P2D);
   smooth(8);
-
   img = loadImage("flow.jpg");
-  Texture back = new Graphic(img);
+  //Texture back = new SolidFill(color(255, 0, 0));
+  //Texture front = new SolidFill(color(0, 0, 255));
   Texture front = new SolidFill(color(234, 225, 214));
+  Texture back = new Graphic(img);
+
   paper = new Paper(600, front, back, color(55, 82, 145));
   canvas = createGraphics(width, height, P2D);
-  
-  blur = loadShader("blur.glsl");
-  blur.set("blurSize", 9);
-  blur.set("sigma", 5.0f);
-  
-  shadow = loadShader("shadow.glsl");
 }
 
 float hoverRad = 20;
@@ -61,8 +54,10 @@ void draw() {
   canvas.endDraw();
   image(canvas, 0, 0);
   
-  translate(width/2f, height/2f);
-  encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
+  if (!mousePressed) {
+    translate(width/2f, height/2f);
+    encircle(getHoveredVertex(paper, hoverRad), hoverRad, color(255, 0, 0, 32));
+  }
 }
 
 float transitionSpeed = 1/4f;
@@ -80,8 +75,8 @@ boolean transitionFoldMovement() {
 
 void foldNewPaper() {
   PVector newPos = dragTarget.copy().add(dragOffset);
-  PVector lineMid = newPos.copy().add(draggedVertex).mult(0.5);
-  PVector lineDir = newPos.copy().sub(draggedVertex).normalize().cross(new PVector(0, 0, 1));
+  PVector lineMid = newPos.copy().add(draggedVertex.pos).mult(0.5);
+  PVector lineDir = newPos.copy().sub(draggedVertex.pos).normalize().cross(new PVector(0, 0, 1));
   
   Line crease = new Line(lineMid, lineDir);
   foldedPaper = paper.clone();
@@ -97,16 +92,16 @@ void keyPressed() {
 }
 
 PVector dragOffset;
-PVector draggedVertex;
+Vertex draggedVertex;
 PVector dragTarget;
 
 void mousePressed() {
-  PVector vertex = getHoveredVertex(paper, hoverRad);
+  Vertex vertex = getHoveredVertex(paper, hoverRad);
   
   if (null == vertex) {
     return;  
   }
-  dragOffset = vertex.copy().sub(mouseX, mouseY);
+  dragOffset = vertex.getPos().sub(mouseX, mouseY);
   dragTarget = new PVector(mouseX, mouseY);
   draggedVertex = vertex;  
   foldedPaper = paper.clone();
@@ -117,33 +112,37 @@ void mouseReleased() {
     return;
   }
   if (foldedPaper.layers.size() <= 64) {
-    paper = foldedPaper;  
+    paper = foldedPaper;
+    paper.calvVertices();
   }else {
     println("the paper is too thick to fold");  
   }
   draggedVertex = null;
 }
 
-PVector getHoveredVertex(Paper paper, float radius) {
+Vertex getHoveredVertex(Paper paper, float radius) {
   PVector cursor = new PVector(mouseX - width/2f, mouseY - height/2f);
-
-  for (Vertex vertex : paper.vertices) {
+  Vertex closest = null;
+  float minDist = radius;
+  
+  for (Vertex vertex : paper.dragNodes) {
     float dist = cursor.dist(vertex.pos);
     
-    if (dist <= radius) {
-      return vertex.getPos();
+    if (dist < minDist) {
+      closest = vertex;
+      minDist = dist;
     }
   }
-  return null;
+  return closest;
 }
 
-void encircle(PVector p, float radius, color c) {
-  if (null == p) {
+void encircle(Vertex v, float radius, color c) {
+  if (null == v) {
     return;
   }
   fill(c);
   noStroke();
-  ellipse(p.x, p.y, 2*radius, 2*radius);
+  ellipse(v.pos.x, v.pos.y, 2*radius, 2*radius);
 }
 
 static Object deepClone(Object obj) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
@@ -195,7 +194,10 @@ static <T> ArrayList<T> deepCopy(List<T> list) throws NoSuchMethodException, Ill
   return listCopy;
 }
 
-boolean turnsToRight(PVector v0, PVector v1) {
-  float dot = v0.x * v1.y - v0.y * v1.x;
+/**
+ * Returns true if the second direction vector points to the right compared to the first one. (in 2D processing  space)
+ */
+boolean turnsToRight(PVector dir0, PVector dir1) {
+  float dot = dir0.x * dir1.y - dir0.y * dir1.x;
   return dot <= 0;
 }

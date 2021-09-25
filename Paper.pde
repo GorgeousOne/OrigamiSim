@@ -1,7 +1,8 @@
 
 class Paper {  
-  List<Vertex> vertices;
+  Set<Vertex> dragNodes;
   LinkedList<Set<Face>> layers;
+  LinkedList<LinkedList<Vertex>> layerVerts;
   
   Texture front;
   Texture back;
@@ -14,7 +15,8 @@ class Paper {
     this.border = other.border;
     
     try {
-      vertices = (List<Vertex>) deepClone(other.vertices);
+      dragNodes = (Set<Vertex>) deepClone(other.dragNodes);
+      layerVerts = (LinkedList<LinkedList<Vertex>>) deepClone(other.layerVerts);
       layers = (LinkedList<Set<Face>>) deepClone(other.layers);
     }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
@@ -22,22 +24,46 @@ class Paper {
   }
   
   Paper(float size, Texture front, Texture back, color border) {
-      this.vertices = new ArrayList<Vertex>();
+      this.dragNodes = new HashSet<Vertex>();
       this.layers = new LinkedList<Set<Face>>();
+      this.layerVerts = new LinkedList<LinkedList<Vertex>>();
+
       this.front = front;
       this.back = back;
       this.border = border;
       createSquare(size);
   }
   
-  void createSquare(float size) {
-    vertices.add(new Vertex(-size/2, -size/2, 0, 0));
-    vertices.add(new Vertex( size/2, -size/2, 1, 0));
-    vertices.add(new Vertex( size/2,  size/2, 1, 1));
-    vertices.add(new Vertex(-size/2,  size/2, 0, 1));
+  private void createSquare(float size) {
+    LinkedList<Vertex> firstLayer = new LinkedList<Vertex>(Arrays.asList(
+        new Vertex(-size/2, -size/2, 0, 0),
+        new Vertex( size/2, -size/2, 1, 0),
+        new Vertex( size/2,  size/2, 1, 1),
+        new Vertex(-size/2,  size/2, 0, 1)));
+    
     layers.add(new HashSet<Face>(Arrays.asList(
-        new Face(vertices.get(0), vertices.get(1), vertices.get(2)),
-        new Face(vertices.get(0), vertices.get(2), vertices.get(3)))));
+        new Face(firstLayer.get(0), firstLayer.get(1), firstLayer.get(2)),
+        new Face(firstLayer.get(0), firstLayer.get(2), firstLayer.get(3)))));
+    layerVerts.add(firstLayer);
+    dragNodes.addAll(firstLayer);
+  }
+  
+  void calvVertices() {
+    dragNodes.clear();
+    layerVerts.clear();
+    
+    for (Set<Face> layer : layers) {
+      Set<Vertex> newLayerVerts = new HashSet<Vertex>();
+      
+      for (Face face : layer) {
+        newLayerVerts.add(face.v0);
+        newLayerVerts.add(face.v1);
+        newLayerVerts.add(face.v2);
+      }
+      LinkedList<Vertex> hull = convexHull(new LinkedList<Vertex>(newLayerVerts));
+      layerVerts.addLast(hull);
+      dragNodes.addAll(hull);
+    }
   }
   
   void flip() {
@@ -49,26 +75,35 @@ class Paper {
         face.flip(mid);  
       }
     }
-    for (Vertex vertex : vertices) {
+    for (Vertex vertex : dragNodes) {
       vertex.pos.set(mid.mirror(vertex.pos));
     }
   }
   
   void display(PGraphics g) {
-    g.noFill();
-    
+    Iterator<LinkedList<Vertex>> it = layerVerts.iterator();
+
     for (Set<Face> layer : layers) {
-      g.stroke(border);
-      for (Face face : layer) {
-        face.display(g);  
-      }
+      displayHull(it.next(), g);
       g.noStroke();
+
       for (Face face : layer) {
         face.display(g, front, back);  
       }
     }
   }
-
+  
+  private void displayHull(List<Vertex> vertices, PGraphics g) {
+    g.noFill();
+    g.stroke(border);
+    g.beginShape();
+    
+    for (Vertex v : vertices) {
+      g.vertex(v.pos.x, v.pos.y);   
+    }
+    g.endShape();
+  }
+  
   void fold(Line crease) {
     LinkedList<Set<Face>> newLayers = new LinkedList<Set<Face>>();
     Iterator<Set<Face>> it = layers.descendingIterator();
@@ -98,18 +133,20 @@ class Paper {
       }
     }
     this.layers = newLayers;
-    
-    for (Vertex vertex : vertices) {
-      if (crease.liesToRight(vertex.pos)) {
-        vertex.pos.set(crease.mirror(vertex.pos));
-      }
-    }
+    calvVertices();
   }
   
-  void addFace(Face face, int layer, Map<Integer, Set<Face>> layerMap) {
-    layerMap.putIfAbsent(layer, new HashSet<Face>());
-    layerMap.get(layer).add(face);    
-  }
+  //private void foldVertices(Line crease) {
+  //  for (Vertex vertex : vertices) {
+  //    if (crease.liesToRight(vertex.pos)) {
+  //      vertex.pos.set(crease.mirror(vertex.pos));
+  //    }
+  //  }    
+  //}
+  //private void addFace(Face face, int layer, Map<Integer, Set<Face>> layerMap) {
+  //  layerMap.putIfAbsent(layer, new HashSet<Face>());
+  //  layerMap.get(layer).add(face);    
+  //}
   
   @Override
   public Paper clone() {

@@ -3,6 +3,7 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.Collection;
 import java.util.Iterator;
 import java.lang.reflect.InvocationTargetException;
@@ -24,6 +25,7 @@ void setup() {
   Texture back = new Graphic(img);
 
   paper = new Paper(600, front, back, color(55, 82, 145));
+  foldedPaper = paper.clone();
   canvas = createGraphics(width, height, P2D);
 }
 
@@ -45,12 +47,10 @@ void draw() {
     boolean didMove = transitionFoldMovement();
     
     if (didMove) {
-      foldNewPaper();
+      foldNewPaper(draggedVertex);
     }
-    foldedPaper.display(canvas);
-  }else {
-    paper.display(canvas);
   }
+  foldedPaper.display(canvas);
   canvas.endDraw();
   image(canvas, 0, 0);
   
@@ -73,14 +73,14 @@ boolean transitionFoldMovement() {
   return true;
 }
 
-void foldNewPaper() {
+void foldNewPaper(Vertex draggedVertex) {
   PVector newPos = dragTarget.copy().add(dragOffset);
   PVector lineMid = newPos.copy().add(draggedVertex.pos).mult(0.5);
   PVector lineDir = newPos.copy().sub(draggedVertex.pos).normalize().cross(new PVector(0, 0, 1));
   
   Line crease = new Line(lineMid, lineDir);
   foldedPaper = paper.clone();
-  foldedPaper.fold(crease); 
+  foldedPaper.fold(draggedVertex, crease); 
 }
 
 void keyPressed() {
@@ -124,7 +124,7 @@ Vertex getHoveredVertex(Paper paper, float radius) {
   Vertex closest = null;
   float minDist = radius;
   
-  for (Vertex vertex : paper.dragNodes) {
+  for (Vertex vertex : paper.dragNodes.keySet()) {
     float dist = cursor.dist(vertex.pos);
     
     if (dist < minDist) {

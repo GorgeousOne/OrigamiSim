@@ -1,7 +1,7 @@
 
 class Paper {  
-  Set<Vertex> dragNodes;
   LinkedList<Layer> layers;
+  Map<Vertex, Layer> dragNodes;
   
   Texture front;
   Texture back;
@@ -14,25 +14,27 @@ class Paper {
     this.border = other.border;
     
     try {
-      dragNodes = (Set<Vertex>) deepClone(other.dragNodes);
       layers = (LinkedList<Layer>) deepClone(other.layers);
     }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }
+    calcDragNodes();
   }
   
   Paper(float size, Texture front, Texture back, color border) {
-      this.dragNodes = new HashSet<>();
+      this.dragNodes = new HashMap<>();
       this.layers = new LinkedList<>();
 
       this.front = front;
       this.back = back;
       this.border = border;
       createSquare(size);
+      println(null == dragNodes);
+      calcDragNodes(); 
   }
   
   private void createSquare(float size) {
-    LinkedList<Vertex> nodes = new LinkedList<>(Arrays.asList(
+    LinkedList<Vertex> verts = new LinkedList<>(Arrays.asList(
         new Vertex(-size/2, -size/2, 0, 0),
         new Vertex( size/2, -size/2, 1, 0),
         new Vertex( size/2,  size/2, 1, 1),
@@ -40,25 +42,23 @@ class Paper {
     
     Layer base = new Layer(
         new HashSet<>(Arrays.asList(
-            new Face(nodes.get(0), nodes.get(1), nodes.get(2)),
-            new Face(nodes.get(0), nodes.get(2), nodes.get(3)))),
+            new Face(verts.get(0), verts.get(1), verts.get(2)),
+            new Face(verts.get(0), verts.get(2), verts.get(3)))),
         new LinkedList<>(Arrays.asList(
-            new Edge(nodes.get(0), nodes.get(1)),
-            new Edge(nodes.get(1), nodes.get(2)),
-            new Edge(nodes.get(2), nodes.get(3)),
-            new Edge(nodes.get(3), nodes.get(0))))
+            new Edge(verts.get(0), verts.get(1)),
+            new Edge(verts.get(1), verts.get(2)),
+            new Edge(verts.get(2), verts.get(3)),
+            new Edge(verts.get(3), verts.get(0))))
     );
-    //layerVerts.add(firstLayer);
     layers.add(base);
-    dragNodes.addAll(nodes);    
   }
   
-  private void calcVertices() {
-    dragNodes.clear();
+  private void calcDragNodes() {
+    dragNodes = new HashMap<>();
     
     for (Layer layer : layers) {
       for (Edge edge : layer.edges) {
-        dragNodes.add(edge.start);  
+        dragNodes.putIfAbsent(edge.start, layer);  
       }
     }
   }
@@ -70,7 +70,7 @@ class Paper {
     for (Layer layer : layers) {
       layer.flip(mid);  
     }
-    calcVertices();
+    calcDragNodes();
     return this;
   }
   
@@ -80,12 +80,17 @@ class Paper {
     }
   }
   
-  void fold(Line crease) {
+  void fold(Vertex draggedVertex, Line crease) {
     LinkedList<Layer> newLayers = new LinkedList<>();
-    Iterator<Layer> it = layers.descendingIterator();
     
-    while(it.hasNext()) {
-      Layer layer = it.next();
+    Layer startLayer = dragNodes.get(draggedVertex);
+    int startIndex = layers.indexOf(startLayer);
+    //Iterator<Layer> it = layers.listIterator(startIndex);
+    
+    for (int i = layers.size()-1; i >= startIndex; --i) {
+    //while(it.hasNext()) {
+      //Layer layer = it.next();
+      Layer layer = layers.get(i);
       Pair<Layer, Layer> splitLayer = layer.fold(crease);
       
       if (null != splitLayer.first) {
@@ -95,8 +100,14 @@ class Paper {
         newLayers.addLast(splitLayer.second);
       }
     }
+    ListIterator<Layer> it2 = layers.listIterator(startIndex);
+    
+    while (it2.hasPrevious()) {
+      newLayers.addFirst(it2.previous());  
+    }
+    
     this.layers = newLayers;
-    calcVertices();
+    calcDragNodes();
   }
   
   @Override

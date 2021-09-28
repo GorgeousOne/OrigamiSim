@@ -1,7 +1,7 @@
 import java.util.Comparator;
 
 LinkedList<Vertex> convexHull(LinkedList<Vertex> vertices) {
-  LinkedList<Vertex> hull = new LinkedList<Vertex>();
+  LinkedList<Vertex> hull = new LinkedList<>();
   Collections.sort(vertices, new YxComparator());
   
   Vertex start = vertices.getFirst();
@@ -15,7 +15,7 @@ LinkedList<Vertex> convexHull(LinkedList<Vertex> vertices) {
   vertices.removeFirst();
   
   while (!vertices.isEmpty()) {
-    while (hull.size() > 1 && !turnsToRight(hull.get(1), hull.getFirst(), vertices.getFirst())) {
+    while (hull.size() > 1 && turnsToLeft(hull.get(1), hull.getFirst(), vertices.getFirst())) {
       hull.removeFirst();
     }
     hull.addFirst(vertices.getFirst());
@@ -47,6 +47,11 @@ float polarAngle(PVector a, PVector b) {
   return atan2(b.x - a.x, b.y - a.y);
 }
 
-boolean turnsToRight(Vertex pivot, Vertex a, Vertex b) {
-  return turnsToRight(a.getPos().sub(pivot.pos), b.getPos().sub(pivot.pos));
+boolean turnsToLeft(Vertex pivot, Vertex a, Vertex b) {
+  float dirX0 = a.pos.x - pivot.pos.x;
+  float dirX1 = b.pos.x - pivot.pos.x;
+  float dirY0 = a.pos.y - pivot.pos.y;
+  float dirY1 = b.pos.y - pivot.pos.y;  
+  return dirX0 * dirY1 - dirY0 * dirX1 >= 0;
+  //return turnsToRight(a.getPos().sub(pivot.pos), b.getPos().sub(pivot.pos));
 }

@@ -74,7 +74,7 @@ class Edge {
   float length() {
     return start.pos.dist(end.pos);  
   }
-  
+    
   Vertex intersect(Line line) {
     PVector normal = line.getDir().cross(new PVector(0, 0, 1));
     float dirsDotProduct = getDir().dot(normal);

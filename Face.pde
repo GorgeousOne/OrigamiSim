@@ -53,7 +53,7 @@ class Face {
     g.vertex(v2.pos.x, v2.pos.y, v2.uv.x, v2.uv.y);
     g.endShape(CLOSE);    
   }
-
+  
   boolean contains(PVector point) {
     float d1 = this.signFunc(point, this.v0.pos, this.v1.pos);
     float d2 = this.signFunc(point, this.v1.pos, this.v2.pos);
@@ -63,15 +63,15 @@ class Face {
     return !(hasNegativeCoordinate && hasPositiveCoordinate);
   }
   
-  float signFunc(PVector p, PVector v0, PVector v1) {
+  private float signFunc(PVector p, PVector v0, PVector v1) {
       return (p.x - v1.x) * (v0.y - v1.y) - (v0.x - v1.x) * (p.y - v1.y);  
   }
   
   Set<Face> subdivide(Line crease) {    
-    Set<Face> divisions = new HashSet<Face>();
     Vertex inters0 = edge0.intersect(crease);
     Vertex inters1 = edge1.intersect(crease);
     Vertex inters2 = edge2.intersect(crease);
+    Set<Face> divisions = new HashSet<>();
     
     //no intersection with face
     if (null == inters0 &&
@@ -93,7 +93,38 @@ class Face {
     return divisions;
   }
   
-  Set<Face>triangulateQuad(Vertex p0, Vertex p1, Vertex p2, Vertex p3) {
+  //Pair<Set<Face>, Edge> subdivide(Line crease) {    
+  //  Vertex inters0 = edge0.intersect(crease);
+  //  Vertex inters1 = edge1.intersect(crease);
+  //  Vertex inters2 = edge2.intersect(crease);
+    
+  //  Set<Face> divisions = new HashSet<>();
+  //  Edge edge = null;;
+    
+  //  //no intersection with face
+  //  if (null == inters0 &&
+  //      null == inters1 &&
+  //      null == inters2) {
+  //    divisions.add(this.clone());  
+  //    return new Pair<>(divisions, edge);
+  //  }
+  //  if (null != inters0 && null != inters1) {
+  //    divisions.add(new Face(inters0, v1, inters1, isFlipped));
+  //    divisions.addAll(triangulateQuad(inters0, inters1, v2, v0));
+  //    edge = new Edge(inters0, inters1);
+  //  } else if (null != inters1 && null != inters2) {
+  //    divisions.add(new Face(inters1, v2, inters2, isFlipped));
+  //    divisions.addAll(triangulateQuad(inters1, inters2, v0, v1));      
+  //    edge = new Edge(inters1, inters2);
+  //  } else {
+  //    divisions.add(new Face(inters2, v0, inters0, isFlipped));
+  //    divisions.addAll(triangulateQuad(inters2, inters0, v1, v2));      
+  //    edge = new Edge(inters2, inters0);
+  //  }
+  //  return new Pair<>(divisions, edge);
+  //}
+  
+  private Set<Face> triangulateQuad(Vertex p0, Vertex p1, Vertex p2, Vertex p3) {
     float disuv1 = p0.pos.dist(p2.pos);
     float disuv2 = p1.pos.dist(p3.pos);
     

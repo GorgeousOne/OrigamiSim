@@ -1,8 +1,7 @@
 
 class Paper {  
   Set<Vertex> dragNodes;
-  LinkedList<Set<Face>> layers;
-  LinkedList<LinkedList<Vertex>> layerVerts;
+  LinkedList<Layer> layers;
   
   Texture front;
   Texture back;
@@ -16,17 +15,15 @@ class Paper {
     
     try {
       dragNodes = (Set<Vertex>) deepClone(other.dragNodes);
-      layerVerts = (LinkedList<LinkedList<Vertex>>) deepClone(other.layerVerts);
-      layers = (LinkedList<Set<Face>>) deepClone(other.layers);
+      layers = (LinkedList<Layer>) deepClone(other.layers);
     }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }
   }
   
   Paper(float size, Texture front, Texture back, color border) {
-      this.dragNodes = new HashSet<Vertex>();
-      this.layers = new LinkedList<Set<Face>>();
-      this.layerVerts = new LinkedList<LinkedList<Vertex>>();
+      this.dragNodes = new HashSet<>();
+      this.layers = new LinkedList<>();
 
       this.front = front;
       this.back = back;
@@ -35,99 +32,67 @@ class Paper {
   }
   
   private void createSquare(float size) {
-    LinkedList<Vertex> firstLayer = new LinkedList<Vertex>(Arrays.asList(
+    LinkedList<Vertex> nodes = new LinkedList<>(Arrays.asList(
         new Vertex(-size/2, -size/2, 0, 0),
         new Vertex( size/2, -size/2, 1, 0),
         new Vertex( size/2,  size/2, 1, 1),
         new Vertex(-size/2,  size/2, 0, 1)));
     
-    layers.add(new HashSet<Face>(Arrays.asList(
-        new Face(firstLayer.get(0), firstLayer.get(1), firstLayer.get(2)),
-        new Face(firstLayer.get(0), firstLayer.get(2), firstLayer.get(3)))));
-    layerVerts.add(firstLayer);
-    dragNodes.addAll(firstLayer);    
+    Layer base = new Layer(
+        new HashSet<>(Arrays.asList(
+            new Face(nodes.get(0), nodes.get(1), nodes.get(2)),
+            new Face(nodes.get(0), nodes.get(2), nodes.get(3)))),
+        new LinkedList<>(Arrays.asList(
+            new Edge(nodes.get(0), nodes.get(1)),
+            new Edge(nodes.get(1), nodes.get(2)),
+            new Edge(nodes.get(2), nodes.get(3)),
+            new Edge(nodes.get(3), nodes.get(0))))
+    );
+    //layerVerts.add(firstLayer);
+    layers.add(base);
+    dragNodes.addAll(nodes);    
   }
   
   private void calcVertices() {
     dragNodes.clear();
-    layerVerts.clear();
     
-    for (Set<Face> layer : layers) {
-      Set<Vertex> newLayerVerts = new HashSet<Vertex>();
-      
-      for (Face face : layer) {
-        newLayerVerts.add(face.v0);
-        newLayerVerts.add(face.v1);
-        newLayerVerts.add(face.v2);
+    for (Layer layer : layers) {
+      for (Edge edge : layer.edges) {
+        dragNodes.add(edge.start);  
       }
-      LinkedList<Vertex> hull = convexHull(new LinkedList<Vertex>(newLayerVerts));
-      layerVerts.addLast(hull);
-      dragNodes.addAll(hull);
     }
   }
   
-  void flip() {
+  Paper flip() {
     Collections.reverse(layers);
     Line mid = new Line(new PVector(0, 0), new PVector(0, 1));
     
-    for (Set<Face> layer : layers) {
-      for (Face face : layer) {
-        face.flip(mid);  
-      }
+    for (Layer layer : layers) {
+      layer.flip(mid);  
     }
     calcVertices();
+    return this;
   }
   
   void display(PGraphics g) {
-    Iterator<LinkedList<Vertex>> it = layerVerts.iterator();
-
-    for (Set<Face> layer : layers) {
-      displayHull(it.next(), g);
-      g.noStroke();
-
-      for (Face face : layer) {
-        face.display(g, front, back);  
-      }
+    for (Layer layer : layers) {
+      layer.display(g, front, back, border);
     }
-  }
-  
-  private void displayHull(List<Vertex> vertices, PGraphics g) {
-    g.noFill();
-    g.stroke(border);
-    g.beginShape();
-    
-    for (Vertex v : vertices) {
-      g.vertex(v.pos.x, v.pos.y);   
-    }
-    g.endShape(CLOSE);
   }
   
   void fold(Line crease) {
-    LinkedList<Set<Face>> newLayers = new LinkedList<Set<Face>>();
-    Iterator<Set<Face>> it = layers.descendingIterator();
+    LinkedList<Layer> newLayers = new LinkedList<>();
+    Iterator<Layer> it = layers.descendingIterator();
     
     while(it.hasNext()) {
-      Set<Face> layer = it.next();
-      Set<Face> newBotLayer = new HashSet<Face>();
-      Set<Face> newTopLayer = new HashSet<Face>();
+      Layer layer = it.next();
+      Pair<Layer, Layer> splitLayer = layer.fold(crease);
       
-      for (Face face : layer) {
-        Set<Face> subdivisions = face.subdivide(crease);
-        
-        for (Face newFace : subdivisions) {
-          if (crease.liesToRight(newFace.getMid())) {
-            newFace.flip(crease);
-            newTopLayer.add(newFace);
-          }else {
-            newBotLayer.add(newFace);
-          }
-        }
+      if (null != splitLayer.first) {
+        newLayers.addFirst(splitLayer.first);  
       }
-      if (!newBotLayer.isEmpty()) {
-        newLayers.addFirst(newBotLayer);  
-      }
-      if (!newTopLayer.isEmpty()) {
-        newLayers.addLast(newTopLayer);
+      if (null != splitLayer.second) {
+        newLayers.addLast(splitLayer.second);
       }
     }
     this.layers = newLayers;

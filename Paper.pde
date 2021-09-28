@@ -18,6 +18,7 @@ class Paper {
     }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }
+    dragNodes = new HashMap<>();
     calcDragNodes();
   }
   
@@ -29,7 +30,6 @@ class Paper {
       this.back = back;
       this.border = border;
       createSquare(size);
-      println(null == dragNodes);
       calcDragNodes(); 
   }
   
@@ -54,7 +54,7 @@ class Paper {
   }
   
   private void calcDragNodes() {
-    dragNodes = new HashMap<>();
+    dragNodes.clear();
     
     for (Layer layer : layers) {
       for (Edge edge : layer.edges) {
@@ -85,11 +85,9 @@ class Paper {
     
     Layer startLayer = dragNodes.get(draggedVertex);
     int startIndex = layers.indexOf(startLayer);
-    //Iterator<Layer> it = layers.listIterator(startIndex);
+    startLayer.adjustCrease(crease);
     
     for (int i = layers.size()-1; i >= startIndex; --i) {
-    //while(it.hasNext()) {
-      //Layer layer = it.next();
       Layer layer = layers.get(i);
       Pair<Layer, Layer> splitLayer = layer.fold(crease);
       

@@ -50,4 +50,19 @@ class Line {
     PVector dist = p.copy().sub(plumbBobPoint);
     return plumbBobPoint.sub(dist);
   }
+  
+  PVector distance(PVector p) {
+    PVector normal = direction.cross(new PVector(0, 0, 1));
+    PVector plumbBobPoint = intersect(new Line(p, normal));
+    return p.copy().sub(plumbBobPoint);
+  }
+  
+  float tDistance(PVector p) {
+    PVector normal = direction.cross(new PVector(0, 0, 1));
+    PVector plumbBobPoint = intersect(new Line(p, normal));
+    return direction.x != 0 ? 
+        (plumbBobPoint.x - origin.x) / direction.x : 
+        (plumbBobPoint.y - origin.y) / direction.y;
+  }
+
 }

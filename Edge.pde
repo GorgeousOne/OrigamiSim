@@ -2,10 +2,19 @@ class Edge implements Cloneable {
   
   Vertex start;
   Vertex end;
+  boolean foldsDown;
+  boolean foldsUp;
   
   Edge(Vertex start, Vertex end) {
     this.start = start.clone();
     this.end = end.clone();
+  }
+  
+  Edge(Edge other) {
+    start = other.start.clone();
+    end = other.end.clone();
+    foldsDown = other.foldsDown;
+    foldsUp = other.foldsUp;
   }
 
   PVector getDir() {
@@ -40,6 +49,11 @@ class Edge implements Cloneable {
   void flip(Line crease) {
     start.flip(crease);
     end.flip(crease);
+    
+    if (foldsDown || foldsUp) {
+      foldsDown = !foldsDown;
+      foldsUp = !foldsUp;
+    }
   }
   
   Vertex point(float t) {
@@ -60,6 +74,6 @@ class Edge implements Cloneable {
     
   @Override
   public Edge clone() {
-    return new Edge(start.clone(), end.clone());
+    return new Edge(this);
   }
 }

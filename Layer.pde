@@ -18,7 +18,7 @@ class Layer implements Cloneable{
     try {
       faces = (Set<Face>) deepClone(other.faces);
       edges = (List<Edge>) deepClone(other.edges);
-  }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+    }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }  
   }
@@ -41,12 +41,49 @@ class Layer implements Cloneable{
     }
   }
   
-  void addFace(Face face) {
-    faces.add(face);  
-  }
+  //void addFace(Face face) {
+  //  faces.add(face);  
+  //}
 
-  void addEdge(Edge edge) {
-    edges.add(edge);  
+  //void addEdge(Edge edge) {
+  //  edges.add(edge);  
+  //}
+  
+  void adjustCrease(Line crease) {
+    Set<Vertex> fixedVerts = getFixedVertices();
+    List<Vertex> crossedVerts = new ArrayList<>();
+    
+    for (Vertex vertex : fixedVerts) {
+      if (crease.liesToRight(vertex.pos)) {
+        crossedVerts.add(vertex);
+      }
+    }
+    if (crossedVerts.isEmpty()) {
+      return;  
+    }
+    if (crossedVerts.size() == 1) {
+      crease.origin.set(crossedVerts.get(0).pos);
+      return;
+    }
+    if (crossedVerts.size() > 2) {
+      Collections.sort(crossedVerts, Comparator.comparingDouble(v -> crease.distance(v.pos).mag()));  
+      crossedVerts.subList(2, crossedVerts.size()).clear();
+    }
+    Collections.sort(crossedVerts, Comparator.comparingDouble(v -> crease.tDistance(v.pos)));
+    crease.origin.set(crossedVerts.get(0).pos);
+    crease.direction.set(crossedVerts.get(1).getPos().sub(crossedVerts.get(0).pos).normalize());
+  }
+  
+  Set<Vertex> getFixedVertices() {
+    Set<Vertex> vertices = new HashSet<>();
+    
+    for (Edge edge : edges) {
+      if (edge.foldsDown) {
+        vertices.add(edge.start);
+        vertices.add(edge.end);
+      }
+    }    
+    return vertices;
   }
   
   Layer flip(Line crease) {
@@ -115,7 +152,7 @@ class Layer implements Cloneable{
         farIndex = i;
       }
     }
-    if (null == closeInters) {
+    if (-1 == closeIndex || -1 == farIndex) {
       return null;
     }
     return new Pair<>(
@@ -138,7 +175,9 @@ class Layer implements Cloneable{
       polygon.add(edges.get(i % edgeCount).clone());  
     }
     polygon.add(new Edge(edges.get(endIndex).start, last));
-    polygon.add(new Edge(last, first));
+    Edge newEdge = new Edge(last, first);
+    newEdge.foldsUp = true;
+    polygon.add(newEdge);
     return polygon;
   }
   

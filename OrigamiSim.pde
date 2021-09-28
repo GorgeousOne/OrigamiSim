@@ -4,11 +4,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ListIterator;
-import java.util.Collection;
 import java.util.Iterator;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Collection;
+import java.util.Comparator;
+
 
 Paper paper;
 Paper foldedPaper;

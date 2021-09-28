@@ -35,10 +35,11 @@ void draw() {
   canvas.beginDraw();
   canvas.clear();
   canvas.textureMode(NORMAL);
-  canvas.translate(width/2f, height/2f);
-  
   canvas.strokeWeight(7);
   canvas.strokeJoin(ROUND);
+
+  //canvas.background(255);
+  canvas.translate(width/2f, height/2f);
   
   if (null != draggedVertex) {
     boolean didMove = transitionFoldMovement();
@@ -112,7 +113,6 @@ void mouseReleased() {
   }
   if (foldedPaper.layers.size() <= 64) {
     paper = foldedPaper;
-    paper.calcVertices();
   }else {
     println("the paper is too thick to fold");  
   }

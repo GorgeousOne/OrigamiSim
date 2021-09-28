@@ -22,6 +22,11 @@ class Vertex implements Cloneable{
     return uv.copy();
   }
   
+  Vertex flip(Line crease) {
+    pos.set(crease.mirror(pos));
+    return this;
+  }
+  
   @Override
   public String toString() {
     return "\n" + pos.toString();

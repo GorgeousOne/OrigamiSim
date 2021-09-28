@@ -34,20 +34,15 @@ class Face implements Cloneable {
     return v0.getPos().add(v1.pos).add(v2.pos).mult(1/3f);  
   }
 
-  void display(PGraphics g) {
-    display(g, null, null);
-  }
-
   void display(PGraphics g, Texture front, Texture back) {
     g.beginShape();
     
-    if (null != front) {
-      if (isFlipped) {
-        back.apply(g);  
-      }else {
-        front.apply(g);
-      }   
+    if (isFlipped) {
+      back.apply(g);  
+    }else {
+      front.apply(g);
     }
+    
     g.vertex(v0.pos.x, v0.pos.y, v0.uv.x, v0.uv.y);
     g.vertex(v1.pos.x, v1.pos.y, v1.uv.x, v1.uv.y);
     g.vertex(v2.pos.x, v2.pos.y, v2.uv.x, v2.uv.y);
@@ -92,38 +87,7 @@ class Face implements Cloneable {
     }
     return divisions;
   }
-  
-  //Pair<Set<Face>, Edge> subdivide(Line crease) {    
-  //  Vertex inters0 = edge0.intersect(crease);
-  //  Vertex inters1 = edge1.intersect(crease);
-  //  Vertex inters2 = edge2.intersect(crease);
-    
-  //  Set<Face> divisions = new HashSet<>();
-  //  Edge edge = null;;
-    
-  //  //no intersection with face
-  //  if (null == inters0 &&
-  //      null == inters1 &&
-  //      null == inters2) {
-  //    divisions.add(this.clone());  
-  //    return new Pair<>(divisions, edge);
-  //  }
-  //  if (null != inters0 && null != inters1) {
-  //    divisions.add(new Face(inters0, v1, inters1, isFlipped));
-  //    divisions.addAll(triangulateQuad(inters0, inters1, v2, v0));
-  //    edge = new Edge(inters0, inters1);
-  //  } else if (null != inters1 && null != inters2) {
-  //    divisions.add(new Face(inters1, v2, inters2, isFlipped));
-  //    divisions.addAll(triangulateQuad(inters1, inters2, v0, v1));      
-  //    edge = new Edge(inters1, inters2);
-  //  } else {
-  //    divisions.add(new Face(inters2, v0, inters0, isFlipped));
-  //    divisions.addAll(triangulateQuad(inters2, inters0, v1, v2));      
-  //    edge = new Edge(inters2, inters0);
-  //  }
-  //  return new Pair<>(divisions, edge);
-  //}
-  
+
   private Set<Face> triangulateQuad(Vertex p0, Vertex p1, Vertex p2, Vertex p3) {
     float disuv1 = p0.pos.dist(p2.pos);
     float disuv2 = p1.pos.dist(p3.pos);
@@ -139,14 +103,15 @@ class Face implements Cloneable {
     }
   }
   
-  void flip(Line crease) {
+  Face flip(Line crease) {
     isFlipped = !isFlipped;
     v0.pos.set(crease.mirror(v0.pos));
     v1.pos.set(crease.mirror(v1.pos));
     v2.pos.set(crease.mirror(v2.pos));
-    edge0 = new Edge(v0, v1);
-    edge1 = new Edge(v1, v2);
-    edge2 = new Edge(v2, v0);
+    edge0.flip(crease);
+    edge1.flip(crease);
+    edge2.flip(crease);
+    return this;
   }
   
   @Override

@@ -24,12 +24,14 @@ class Layer implements Cloneable{
   }
 
   void display(PGraphics g, Texture front, Texture back, color border) {
-    g.stroke(border);
+    g.stroke(border); 
+    g.noFill();
     g.beginShape();
 
     for (Edge edge : edges) {
       Vertex v = edge.start;
       g.vertex(v.pos.x, v.pos.y, v.uv.x, v.uv.y);
+      //edge.display(g);
     }
     g.endShape(CLOSE);
     g.noStroke();
@@ -52,7 +54,7 @@ class Layer implements Cloneable{
       edge.flip(crease);  
     }
     for (Face face : faces) {
-      face.flip(crease);  
+      face.flip(crease);
     }
     return this;
   }
@@ -61,7 +63,7 @@ class Layer implements Cloneable{
     Pair<List<Edge>, List<Edge>> newLayerEdges = calcDividedEdges(crease);
     
     if (null == newLayerEdges) {
-      
+      //returns itself flipped/unflipped if the line does noth intersecti with layer directly
       if (crease.liesToRight(edges.get(0).start.pos)) {
         return new Pair<>(null, this.flip(crease));
       }else {
@@ -74,7 +76,7 @@ class Layer implements Cloneable{
         new Layer(newLayerFaces.second, newLayerEdges.second).flip(crease));
   }
   
-  Pair<Set<Face>, Set<Face>> calcDividedFaces(Line crease) {
+  private Pair<Set<Face>, Set<Face>> calcDividedFaces(Line crease) {
     Set<Face> facesLeft = new HashSet<Face>();
     Set<Face> facesRight = new HashSet<Face>();
     
@@ -83,18 +85,18 @@ class Layer implements Cloneable{
       
       for (Face newFace : subdivisions) {
         if (crease.liesToRight(newFace.getMid())) {
-          facesLeft.add(newFace);
-        }else {
           facesRight.add(newFace);
+        }else {
+          facesLeft.add(newFace);
         }
       }
     }
     return new Pair<>(facesLeft, facesRight);
   }
   
-  Pair<List<Edge>, List<Edge>> calcDividedEdges(Line crease) {
-    Vertex close = null;
-    Vertex far = null;
+  private Pair<List<Edge>, List<Edge>> calcDividedEdges(Line crease) {
+    Vertex closeInters = null;
+    Vertex farInters = null;
     int closeIndex = -1;
     int farIndex = -1;
     
@@ -106,22 +108,26 @@ class Layer implements Cloneable{
         continue;  
       }
       if (crease.liesToRight(edge.start.pos)) {
-        close = intersection;
+        closeInters = intersection;
         closeIndex = i;
       } else {
-        far = intersection;  
+        farInters = intersection;  
         farIndex = i;
       }
     }
-    if (null == close) {
+    if (null == closeInters) {
       return null;
     }
     return new Pair<>(
-        createSubPolygon(closeIndex, farIndex, close, far),
-        createSubPolygon(farIndex, closeIndex, far, close));
+        createSubPolygon(closeIndex, farIndex, closeInters, farInters),
+        createSubPolygon(farIndex, closeIndex, farInters, closeInters));
   }
   
-  List<Edge> createSubPolygon(int startIndex, int endIndex, Vertex first, Vertex last) {
+  /**
+    * Calculates edges of left or right side of the folded layer.
+    * Starts at first vertex and iterates clockwise to last vertex to collect all edges that form the outline of the subdivision.
+    */
+  private List<Edge> createSubPolygon(int startIndex, int endIndex, Vertex first, Vertex last) {
     List<Edge> polygon = new ArrayList<>();
     polygon.add(new Edge(first, edges.get(startIndex).end));
     
@@ -140,32 +146,4 @@ class Layer implements Cloneable{
   public Layer clone() {
     return new Layer(this);
   }
-  //Edge calcTotalCrease(Set<Edge> subEdges) {
-  //  Vertex start = null;
-  //  Vertex end = null;
-  //  float edgeLength = 0;
-    
-  //  for (Edge edge : subEdges) {
-  //    if (null == start) {
-  //      start = edge.start;
-  //      end = edge.end;
-  //      edgeLength = edge.length();
-  //      continue;
-  //    }
-  //    float distStart = end.pos.dist(edge.start.pos);
-
-  //    if (distStart > edgeLength) {
-  //      start = edge.start; 
-  //      edgeLength = distStart;
-  //      continue;
-  //    }
-  //    float distEnd = start.pos.dist(edge.end.pos);
-      
-  //    if (distEnd > edgeLength) {
-  //      end = edge.end;
-  //      edgeLength = distEnd;
-  //    }
-  //  }
-  //  return new Edge(start, end);
-  //}
 }

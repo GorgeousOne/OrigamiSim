@@ -53,7 +53,7 @@ class Line {
 }
 
 
-class Edge {
+class Edge implements Cloneable {
   
   Vertex start;
   Vertex end;
@@ -62,7 +62,7 @@ class Edge {
     this.start = start.clone();
     this.end = end.clone();
   }
-  
+
   PVector getDir() {
     return end.getPos().sub(start.pos);  
   }
@@ -85,6 +85,12 @@ class Edge {
     }
     float delta = line.getOrigin().sub(start.pos).dot(normal) / dirsDotProduct;
     return delta < 0 || delta > 1 ? null : point(delta);
+  }
+  
+  void flip(Line crease) {
+    PVector temp = start.getPos();
+    start.pos.set(crease.mirror(end.pos));
+    end.pos.set(crease.mirror(temp));
   }
   
   Vertex point(float t) {

@@ -1,6 +1,6 @@
 float epsilon = 0.001;
 
-class Face {
+class Face implements Cloneable {
   boolean isFlipped;
   Vertex v0;  
   Vertex v1;  

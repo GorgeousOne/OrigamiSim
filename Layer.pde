@@ -1,5 +1,5 @@
 
-class Layer {
+class Layer implements Cloneable{
   
   Set<Face> faces;
   List<Edge> edges;
@@ -13,7 +13,32 @@ class Layer {
     this.faces = faces;
     this.edges = edges;
   }
+  
+  Layer(Layer other) {
+    try {
+      faces = (Set<Face>) deepClone(other.faces);
+      edges = (List<Edge>) deepClone(other.edges);
+  }catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      e.printStackTrace();
+    }  
+  }
 
+  void display(PGraphics g, Texture front, Texture back, color border) {
+    g.stroke(border);
+    g.beginShape();
+
+    for (Edge edge : edges) {
+      Vertex v = edge.start;
+      g.vertex(v.pos.x, v.pos.y, v.uv.x, v.uv.y);
+    }
+    g.endShape(CLOSE);
+    g.noStroke();
+    
+    for (Face face : faces) {
+      face.display(g, front, back);  
+    }
+  }
+  
   void addFace(Face face) {
     faces.add(face);  
   }
@@ -22,72 +47,78 @@ class Layer {
     edges.add(edge);  
   }
   
-  void mirror(Line crease) {
-      
+  Layer flip(Line crease) {
+    for (Edge edge : edges) {
+      edge.flip(crease);  
+    }
+    for (Face face : faces) {
+      face.flip(crease);  
+    }
+    return this;
   }
   
   Pair<Layer, Layer> fold(Line crease) {
-    Pair<List<Edge>, List<Edge>> newLayerBounds = calcNewPolygons(crease);
+    Pair<List<Edge>, List<Edge>> newLayerEdges = calcDividedEdges(crease);
     
-    if (null == newLayerBounds) {
+    if (null == newLayerEdges) {
+      
       if (crease.liesToRight(edges.get(0).start.pos)) {
-        this.mirror(crease);  
+        return new Pair<>(null, this.flip(crease));
+      }else {
+        return new Pair<>(this, null);
       }
-      return null;
     }
-    Pair<Set<Face>, Set<Face>> newLayerFaces = divideFaces(crease);
-    Layer layerLeft = new Layer();
-    Layer layerRight = new Layer();    
-
-    layerLeft.addAllEdges(newLayerBounds.first);
-    layerRight.addAllEdges(newLayerBounds.second);
-    return new Pair<>(layerLeft, layerRight);
+    Pair<Set<Face>, Set<Face>> newLayerFaces = calcDividedFaces(crease);
+    return new Pair<>(
+        new Layer(newLayerFaces.first, newLayerEdges.first),
+        new Layer(newLayerFaces.second, newLayerEdges.second).flip(crease));
   }
   
-  Pair<Set<Face>, Set<Face>> divideFaces(Line crease) {
+  Pair<Set<Face>, Set<Face>> calcDividedFaces(Line crease) {
+    Set<Face> facesLeft = new HashSet<Face>();
+    Set<Face> facesRight = new HashSet<Face>();
     
     for (Face face : faces) {
       Set<Face> subdivisions = face.subdivide(crease);
       
       for (Face newFace : subdivisions) {
         if (crease.liesToRight(newFace.getMid())) {
-          //newFace.flip(crease);
-          layerLeft.addFace(newFace);
+          facesLeft.add(newFace);
         }else {
-          layerRight.addFace(newFace);
+          facesRight.add(newFace);
         }
       }
     }
-    return null;
+    return new Pair<>(facesLeft, facesRight);
   }
   
-  Pair<List<Edge>, List<Edge>> calcNewPolygons(Line crease) {
-    Vertex in = null;
-    Vertex out = null;
-    int inIndex = -1;
-    int outIndex = -1;
+  Pair<List<Edge>, List<Edge>> calcDividedEdges(Line crease) {
+    Vertex close = null;
+    Vertex far = null;
+    int closeIndex = -1;
+    int farIndex = -1;
     
     for (int i = 0; i < edges.size(); ++i) {
       Edge edge = edges.get(i);
-      Vertex inters = edge.intersect(crease);
+      Vertex intersection = edge.intersect(crease);
       
-      if (null == inters) {
+      if (null == intersection) {
         continue;  
       }
       if (crease.liesToRight(edge.start.pos)) {
-        in = inters;
-        inIndex = i;
+        close = intersection;
+        closeIndex = i;
       } else {
-        out = inters;  
-        outIndex = i;
+        far = intersection;  
+        farIndex = i;
       }
     }
-    if (null == in) {
+    if (null == close) {
       return null;
     }
     return new Pair<>(
-        createSubPolygon(inIndex, outIndex, in, out),
-        createSubPolygon(outIndex, inIndex, out, in));
+        createSubPolygon(closeIndex, farIndex, close, far),
+        createSubPolygon(farIndex, closeIndex, far, close));
   }
   
   List<Edge> createSubPolygon(int startIndex, int endIndex, Vertex first, Vertex last) {
@@ -105,6 +136,10 @@ class Layer {
     return polygon;
   }
   
+  @Override
+  public Layer clone() {
+    return new Layer(this);
+  }
   //Edge calcTotalCrease(Set<Edge> subEdges) {
   //  Vertex start = null;
   //  Vertex end = null;
